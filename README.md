@@ -65,6 +65,12 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+> --------------
+>
+>Go to **SWAGGER API DOCS** at [http://localhost:3000/docs](http://localhost:3000/docs)
+>
+> --------------
+
 ## Test
 
 ```bash
