@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String                  @id @default(uuid())
+  username              String                  @unique
+  email                 String                  @unique
+  password              String
+  fullName              String?
+  phoneNumber           String?
+  avatar                String?
+  dob                   DateTime?
+  homeTown              String?
+  currentAddress        String?
+  CID                   String?
+  description           String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  User_Group            User_Group[]
+  UserWorkPlaceDetails  UserWorkPlaceDetails[]
+  Document              Document[]
+  DocumentReceiveDetail DocumentReceiveDetail[]
+}
+
+model Department {
+  id   String @id @default(uuid())
+  name String
+
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  UserWorkPlaceDetails UserWorkPlaceDetails[]
+  Document             Document[]
+}
+
+model Organization {
+  id   String @id @default(uuid())
+  name String
+
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  UserWorkPlaceDetails UserWorkPlaceDetails[]
+  Document             Document[]
+}
+
+model UserWorkPlaceDetails {
+  id             String       @id @default(cuid())
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  role           Role         @relation(fields: [roleId], references: [id])
+  roleId         String
+  department     Department   @relation(fields: [departmentId], references: [id])
+  departmentId   String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+}
+
+enum RoleType {
+  Bi_Thu
+  Chu_Tich
+  Can_Bo_Nhan_Vien
+  Giam_Doc
+  Giao_Vu
+  Giang_Vien
+  Hieu_Truong
+  Pho_Giam_Doc_1
+  Pho_Giam_Doc_2
+  Pho_Khoa
+  Pho_Trung_Tam
+  Pho_Tong_Giam_Doc_2
+  Pho_Tong_Giam_Doc_3
+  Truong_Khoa
+  Truong_Trung_Tam
+  Tong_Giam_Doc
+  Truong_Phong
+}
+
+model Role {
+  id   String @id @default(uuid())
+  name String
+
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  UserWorkPlaceDetails UserWorkPlaceDetails[]
+  Document             Document[]
+}
+
+model Group {
+  id    String @id @default(uuid())
+  name  String
+  //Level from 1 to 10
+  level Int    @default(1)
+
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  User_Group User_Group[]
+  Document   Document[]
+}
+
+model User_Group {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  group     Group    @relation(fields: [groupId], references: [id])
+  groupId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum DocType {
+  Cong_Van
+  Van_Ban
+  Quyet_Dinh
+  Thong_Bao
+  Thong_Tu
+  Nghien_Cuu
+  Bao_Cao
+  Tai_Lieu
+  Khac
+}
+
+enum IssueMarkType {
+  Ban_Giam_Doc
+  Tong_Cong_Ty
+  Ke_Toan_Tong_Cong_Ty
+  Ban_Quan_Tri
+  Ban_Ke_Toan
+  Phong_Tong_Hop
+}
+
+model Document {
+  id                    String                  @id @default(uuid())
+  type                  DocType
+  issueMark             IssueMarkType
+  group                 Group                   @relation(fields: [issueGroupId], references: [id])
+  issueGroupId          String
+  user                  User                    @relation(fields: [issuePublisherId], references: [id])
+  issuePublisherId      String
+  Role                  Role                    @relation(fields: [issueRoleId], references: [id])
+  issueRoleId           String
+  dateRelease           DateTime
+  dataAvailable         DateTime //Ngay co hieu luc
+  dateExpired           DateTime //Ngay het han
+  description           String
+  content               String
+  Organization          Organization            @relation(fields: [sentOrganization], references: [id])
+  sentOrganization      String
+  Department            Department              @relation(fields: [sentDepartment], references: [id])
+  sentDepartment        String
+  DocumentReceiveDetail DocumentReceiveDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DocumentReceiveDetail {
+  id           String   @id @default(uuid())
+  document     Document @relation(fields: [documentId], references: [id])
+  documentId   String
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  date_receive DateTime
+  isRead       Boolean  @default(false)
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
