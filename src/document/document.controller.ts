@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -15,7 +16,14 @@ import {
   ApiBody,
   ApiConsumes,
 } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
+import {
+  DirectFilterPipe,
+  FilterBuilder,
+  FilterDto,
+  FilterOperationType,
+} from 'src/shared';
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -35,12 +43,57 @@ export class DocumentController {
   }
 
   @Get()
-  findAll(@Request() req) {
-    return this.documentService.findAll(req.user.id);
+  findAll(
+    @Request() req,
+    @Query(
+      new DirectFilterPipe<any, Prisma.DocumentWhereInput>(
+        [
+          'id',
+          'type',
+          'issueMark',
+          'issueGroupId',
+          'issuePublisherId',
+          'issueRoleId',
+          'dateRelease',
+          'dataAvailable',
+          'dateExpired',
+          'description',
+          'content',
+          'sentOrganization',
+          'sentDepartment',
+          'createdAt',
+          'updatedAt',
+        ],
+        [
+          'id',
+          'type',
+          'issueMark',
+          'issueGroupId',
+          'issuePublisherId',
+          'issueRoleId',
+          'dateRelease',
+          'dataAvailable',
+          'dateExpired',
+          'description',
+          'content',
+          'sentOrganization',
+          'sentDepartment',
+          'createdAt',
+          'updatedAt',
+        ],
+      ),
+    )
+    filter: FilterDto<Prisma.DocumentWhereInput>,
+  ) {
+    return this.documentService.findAll(req.user.id, filter.findOptions);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req) {
+    const builder = new FilterBuilder()
+      .addFilter('type', FilterOperationType.Eq, 'Cong_Van')
+      .toQueryString();
+    console.log(builder);
     return this.documentService.findOne(req.user.id, id);
   }
 

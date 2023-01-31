@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { DepartmentService } from 'src/department/department.service';
 import { OrganizationService } from 'src/organization/organization.service';
 import { PrismaService } from 'src/prisma/prsima.service';
@@ -89,18 +90,27 @@ export class DocumentService {
     }
   }
 
-  async findAll(username: string) {
+  /* Calling the findAll method in the documentService.ts file. */
+  async findAll(username: string, filter: Prisma.DocumentFindManyArgs) {
     try {
-      const documents = await this.prisma.document.findMany({
-        where: {
-          user: {
-            username: username,
-          },
+      //Combine filter
+      const temp = filter;
+      temp.where = {
+        ...filter.where,
+        user: {
+          username,
         },
+      };
+      const documents = await this.prisma.document.findMany({
+        ...temp,
       });
       return documents;
     } catch (e) {
-      throw new HttpException(e, HttpStatus.INTERNAL_SERVER_ERROR);
+      console.log(e);
+
+      throw new HttpException('message', HttpStatus.INTERNAL_SERVER_ERROR, {
+        cause: new Error(e),
+      });
     }
   }
 
