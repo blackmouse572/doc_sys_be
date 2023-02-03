@@ -62,6 +62,8 @@ export class UserService {
 
   async login(payload: LoginUserDto): Promise<any> {
     const { username, password } = payload;
+    console.log('LoGIN:', payload);
+
     const _user = await this.prisma.user.findUnique({
       where: {
         username,
@@ -76,7 +78,8 @@ export class UserService {
     }
     //TODO: verify password with salt
 
-    const isAuthorized = argon2.verify(_user.password, password);
+    const isAuthorized = await argon2.verify(_user.password, password);
+
     delete _user.password;
     if (isAuthorized) {
       //TODO: use jwt to generate token

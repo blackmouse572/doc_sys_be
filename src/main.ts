@@ -5,8 +5,21 @@ import * as cookies from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const appOptions = { cors: true };
-  const app = await NestFactory.create(AppModule, appOptions);
+  const app = await NestFactory.create(AppModule);
+  //CORS
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+    preflightContinue: false,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+    ],
+  });
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   const options = new DocumentBuilder()
     .setTitle('DOCSYS Backend API')

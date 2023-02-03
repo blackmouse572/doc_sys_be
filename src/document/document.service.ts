@@ -91,18 +91,36 @@ export class DocumentService {
   }
 
   /* Calling the findAll method in the documentService.ts file. */
-  async findAll(username: string, filter: Prisma.DocumentFindManyArgs) {
+  async findAll(
+    username: string,
+    filter: Prisma.DocumentFindManyArgs,
+    own?: boolean,
+  ) {
     try {
-      //Combine filter
       const temp = filter;
       temp.where = {
         ...filter.where,
-        user: {
-          username,
-        },
       };
+
       const documents = await this.prisma.document.findMany({
         ...temp,
+        where: {
+          user: {
+            username: own ? username : undefined,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              username: true,
+              email: true,
+              avatar: true,
+              fullName: true,
+            },
+          },
+          Department: true,
+          Organization: true,
+        },
       });
       return documents;
     } catch (e) {
@@ -114,7 +132,7 @@ export class DocumentService {
     }
   }
 
-  async findOne(userId, id: string) {
+  async findOne(username: string, id: string) {
     try {
       const document = await this.prisma.document.findUnique({
         where: {
@@ -124,7 +142,7 @@ export class DocumentService {
           user: true,
         },
       });
-      if (document.user.id !== userId) {
+      if (document.user.username !== username) {
         throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
       }
     } catch (error) {

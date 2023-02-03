@@ -42,6 +42,9 @@ export class AuthController {
       };
 
       res.cookie('auth-cookie', secretData, { httpOnly: true });
+      console.log('Login with user:', user);
+      console.log('Login with token:', token);
+
       return { user };
     } catch (e) {
       console.log(e);

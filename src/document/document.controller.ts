@@ -16,7 +16,7 @@ import {
   ApiBody,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { Prisma } from '@prisma/client';
+import { Document, Prisma } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import {
   DirectFilterPipe,
@@ -45,8 +45,9 @@ export class DocumentController {
   @Get()
   findAll(
     @Request() req,
+    @Query() own: boolean,
     @Query(
-      new DirectFilterPipe<any, Prisma.DocumentWhereInput>(
+      new DirectFilterPipe<Document, Prisma.DocumentWhereInput>(
         [
           'id',
           'type',
@@ -85,7 +86,11 @@ export class DocumentController {
     )
     filter: FilterDto<Prisma.DocumentWhereInput>,
   ) {
-    return this.documentService.findAll(req.user.id, filter.findOptions);
+    return this.documentService.findAll(
+      req.user.username,
+      filter.findOptions,
+      own,
+    );
   }
 
   @Get(':id')
