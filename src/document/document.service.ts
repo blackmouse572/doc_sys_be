@@ -190,4 +190,44 @@ export class DocumentService {
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  async findMany(
+    queryString: string,
+    filter: Prisma.DocumentFindManyArgs,
+    own: boolean,
+    username: string,
+  ) {
+    try {
+      const documents = await this.prisma.document.findMany({
+        ...filter,
+        where: {
+          user: {
+            username: own ? username : undefined,
+          },
+          OR: [
+            {
+              description: {
+                contains: queryString,
+              },
+            },
+            {
+              content: {
+                contains: queryString,
+              },
+            },
+            {},
+          ],
+        },
+        orderBy: {
+          dateRelease: 'desc',
+        },
+      });
+
+      return documents;
+    } catch (error) {
+      console.log(error);
+
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
 }

@@ -85,7 +85,16 @@ export class DocumentController {
       ),
     )
     filter: FilterDto<Prisma.DocumentWhereInput>,
+    @Query('q') q: string,
   ) {
+    if (q) {
+      return this.documentService.findMany(
+        q,
+        filter.findOptions,
+        own,
+        req.user.username,
+      );
+    }
     return this.documentService.findAll(
       req.user.username,
       filter.findOptions,
