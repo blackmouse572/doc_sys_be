@@ -76,8 +76,6 @@ export class UserService {
     if (!_user) {
       throw new HttpException({ error }, 401);
     }
-    //TODO: verify password with salt
-
     const isAuthorized = await argon2.verify(_user.password, password);
 
     delete _user.password;
@@ -90,12 +88,17 @@ export class UserService {
     throw new HttpException({ error }, 401);
   }
 
-  async getUserFullInfo(id: string) {
+  async getUserFullInfo(username: string) {
     const user = await this.prisma.user.findUnique({
       where: {
-        id: id,
+        username,
       },
       include: {
+        User_Group: {
+          select: {
+            group: true,
+          },
+        },
         UserWorkPlaceDetails: {
           include: {
             department: true,
@@ -105,9 +108,18 @@ export class UserService {
         },
       },
     });
+
     if (!user) {
       throw new HttpException('User not found', 404);
     } else {
+      delete user.password;
+      delete user.emailConfirmCode;
+      delete user.resetPasswordCode;
+      delete user.phoneNumberConfirmCode;
+      delete user.emailConfirmed;
+      delete user.phoneNumberConfirmed;
+      delete user.createdAt;
+      delete user.updatedAt;
       return user;
     }
   }
