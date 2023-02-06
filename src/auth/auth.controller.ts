@@ -25,8 +25,7 @@ export class AuthController {
   @Post('login')
   @ApiBody({ type: LoginUserDto })
   async login(@Request() req, @Response({ passthrough: true }) res) {
-    try {
-      const user = await this.userService.getUserFullInfo(req.user.user.id);
+      const user = await this.userService.getUserFullInfo(req.user.user.username);
 
       const { username, UserWorkPlaceDetails } = user;
       const { department, role, organization } = UserWorkPlaceDetails[0] || {};
@@ -42,13 +41,7 @@ export class AuthController {
       };
 
       res.cookie('auth-cookie', secretData, { httpOnly: true });
-      console.log('Login with user:', user);
-      console.log('Login with token:', token);
-
       return { user };
-    } catch (e) {
-      console.log(e);
-    }
   }
 
   @Post('register')

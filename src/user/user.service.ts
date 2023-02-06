@@ -1,7 +1,9 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from 'src/prisma/prsima.service';
+import PrismaHelper from 'src/shared/prisma.helper';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -48,22 +50,31 @@ export class UserService {
       },
     });
 
-    delete user.password;
+    PrismaHelper.exclude(user, [
+      'password',
+      'emailConfirmed',
+      'emailConfirmCode',
+      'resetPasswordCode',
+      'phoneNumberConfirmCode',
+    ]);
     return { user };
   }
 
   async findAll(): Promise<any[]> {
-    return await this.prisma.user.findMany({
-      select: {
-        password: false,
-      },
-    });
+    const users: User[] = await this.prisma.user.findMany({});
+
+    PrismaHelper.exclude<User, keyof User>(users, [
+      'password',
+      'resetPasswordCode',
+      'emailConfirmCode',
+      'phoneNumberConfirmCode',
+    ]);
+
+    return users;
   }
 
   async login(payload: LoginUserDto): Promise<any> {
     const { username, password } = payload;
-    console.log('LoGIN:', payload);
-
     const _user = await this.prisma.user.findUnique({
       where: {
         username,
@@ -78,9 +89,16 @@ export class UserService {
     }
     const isAuthorized = await argon2.verify(_user.password, password);
 
-    delete _user.password;
     if (isAuthorized) {
       //TODO: use jwt to generate token
+      PrismaHelper.exclude(_user, [
+        'password',
+        'emailConfirmed',
+        'emailConfirmCode',
+        'resetPasswordCode',
+        'phoneNumberConfirmCode',
+      ]);
+
       return {
         user: _user,
       };
@@ -112,14 +130,14 @@ export class UserService {
     if (!user) {
       throw new HttpException('User not found', 404);
     } else {
-      delete user.password;
-      delete user.emailConfirmCode;
-      delete user.resetPasswordCode;
-      delete user.phoneNumberConfirmCode;
-      delete user.emailConfirmed;
-      delete user.phoneNumberConfirmed;
-      delete user.createdAt;
-      delete user.updatedAt;
+      PrismaHelper.exclude<User, keyof User>(user, [
+        'password',
+        'emailConfirmed',
+        'emailConfirmCode',
+        'resetPasswordCode',
+        'phoneNumberConfirmCode',
+      ]);
+
       return user;
     }
   }
@@ -137,7 +155,14 @@ export class UserService {
   }
   async findByEmail(email: string): Promise<any> {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    delete user.password;
+    PrismaHelper.exclude<User, keyof User>(user, [
+      'password',
+      'emailConfirmed',
+      'emailConfirmCode',
+      'resetPasswordCode',
+      'phoneNumberConfirmCode',
+    ]);
+
     return { user };
   }
 

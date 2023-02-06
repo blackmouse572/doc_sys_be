@@ -1,5 +1,5 @@
 export * from './dto/filter-builder.dto';
-export * from './dto/Filter.dto';
+export * from './dto/filter.dto';
 export * from './filter.enum';
 export * from './interface/filter.interface';
 export * from './parse/filter.parse';
