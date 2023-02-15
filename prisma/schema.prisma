@@ -38,7 +38,6 @@ model Department {
   name                 String
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
-  Document             Document[]
   UserWorkPlaceDetails UserWorkPlaceDetails[]
 }
 
@@ -47,7 +46,6 @@ model Organization {
   name                 String
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
-  Document             Document[]
   UserWorkPlaceDetails UserWorkPlaceDetails[]
 }
 
@@ -68,7 +66,6 @@ model Role {
   name                 String
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
-  Document             Document[]
   UserWorkPlaceDetails UserWorkPlaceDetails[]
 }
 
@@ -78,7 +75,6 @@ model Group {
   level      Int          @default(1)
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
-  Document   Document[]
   User_Group User_Group[]
 }
 
@@ -96,23 +92,15 @@ model Document {
   id                    String                  @id @default(uuid())
   type                  DocType
   issueMark             IssueMarkType
-  issueGroupId          String
   issuePublisherId      String
-  issueRoleId           String
   description           String
   content               String
-  sentOrganization      String
-  sentDepartment        String
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   dataAvailable         DateTime
   dateExpired           DateTime
   dateRelease           DateTime
-  group                 Group                   @relation(fields: [issueGroupId], references: [id])
   user                  User                    @relation(fields: [issuePublisherId], references: [id])
-  Role                  Role                    @relation(fields: [issueRoleId], references: [id])
-  Department            Department              @relation(fields: [sentDepartment], references: [id])
-  Organization          Organization            @relation(fields: [sentOrganization], references: [id])
   DocumentReceiveDetail DocumentReceiveDetail[]
 }
 
