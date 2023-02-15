@@ -13,14 +13,6 @@ export class CreateDocumentDto extends Document {
   @ApiProperty()
   issueMark: IssueMarkType;
 
-  @IsString()
-  @ApiProperty()
-  issueGroupId: string;
-
-  @IsString()
-  @ApiProperty()
-  issueRoleId: string;
-
   @IsDate()
   @Type(() => Date)
   @ApiProperty()
@@ -43,12 +35,4 @@ export class CreateDocumentDto extends Document {
   @IsString()
   @ApiProperty()
   content: string;
-
-  @IsString()
-  @ApiProperty()
-  sentOrganization: string;
-
-  @IsString()
-  @ApiProperty()
-  sentDepartment: string;
 }

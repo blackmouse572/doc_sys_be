@@ -19,8 +19,6 @@ export class DocumentService {
         dateExpired,
         dateRelease,
         dataAvailable,
-        sentDepartment,
-        sentOrganization,
       } = createDocumentDto;
 
       //Check date valid
@@ -44,39 +42,13 @@ export class DocumentService {
       }
 
       //Check sentDepartment and sentOrganization
-      const department = await this.departmentService.findOne(sentDepartment);
-      const organization = await this.organizationService.findOne(
-        sentOrganization,
-      );
-      const role = await this.prisma.role.findUnique({
-        where: {
-          id: createDocumentDto.issueRoleId,
-        },
-      });
-      const group = await this.prisma.group.findUnique({
-        where: {
-          id: createDocumentDto.issueGroupId,
-        },
-      });
       const user = await this.prisma.user.findUnique({
         where: {
           username: userId,
         },
       });
-      if (!department || !organization) {
-        throw new HttpException(
-          'Department or Organization not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      if (!group) {
-        throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-      }
       if (!user) {
         throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
-      }
-      if (!role) {
-        throw new HttpException('Role not found', HttpStatus.NOT_FOUND);
       }
       const document = this.prisma.document.create({
         data: {
@@ -118,8 +90,6 @@ export class DocumentService {
               fullName: true,
             },
           },
-          Department: true,
-          Organization: true,
         },
       });
       return documents;
