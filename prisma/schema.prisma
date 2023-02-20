@@ -76,6 +76,7 @@ model Group {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   User_Group User_Group[]
+  DocumentReceiveGroup DocumentReceiveGroup[]
 }
 
 model User_Group {
@@ -102,6 +103,7 @@ model Document {
   dateRelease           DateTime
   user                  User                    @relation(fields: [issuePublisherId], references: [id])
   DocumentReceiveDetail DocumentReceiveDetail[]
+  DocumentReceiveGroup DocumentReceiveGroup[]
 }
 
 model DocumentReceiveDetail {
@@ -115,6 +117,23 @@ model DocumentReceiveDetail {
   updatedAt    DateTime @updatedAt
   document     Document @relation(fields: [documentId], references: [id])
   user         User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId,documentId])
+}
+
+model DocumentReceiveGroup {
+  id           String   @id @default(uuid())
+  documentId   String
+  groupId       String
+  date_receive DateTime
+  isRead       Boolean  @default(false)
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  document     Document @relation(fields: [documentId], references: [id])
+  group         Group     @relation(fields: [groupId], references: [id])
+
+  @@unique([groupId,documentId])
 }
 
 enum RoleType {
