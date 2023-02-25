@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -11,6 +11,9 @@ import { PrismaService } from './prisma/prsima.service';
 import { UserModule } from './user/user.module';
 import { GroupModule } from './group/group.module';
 import { RoleModule } from './role/role.module';
+import { AuthMiddleware } from './authorization/auth.middleware';
+import { OrganizationController } from './organization/organization.controller';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -23,8 +26,15 @@ import { RoleModule } from './role/role.module';
     OrganizationModule,
     GroupModule,
     RoleModule,
+    JwtModule
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
-export class AppModule {}
+export class AppModule implements NestModule{
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+    .apply(AuthMiddleware)
+    .forRoutes('organization')
+  }
+}

@@ -96,11 +96,7 @@ export class DocumentController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req) {
-    const builder = new FilterBuilder()
-      .addFilter('type', FilterOperationType.Eq, 'Cong_Van')
-      .toQueryString();
-    console.log(builder);
-    return this.documentService.findOne(req.user.id, id);
+    return this.documentService.findOne(req.user.username, id);
   }
 
   @Patch(':id')
@@ -109,11 +105,11 @@ export class DocumentController {
     @Body() updateDocumentDto: UpdateDocumentDto,
     @Request() req,
   ) {
-    return this.documentService.update(req.user.id, id, updateDocumentDto);
+    return this.documentService.update(req.username, id, updateDocumentDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req) {
-    return this.documentService.remove(req.user.id, id);
+    return this.documentService.remove(req.username, id);
   }
 }

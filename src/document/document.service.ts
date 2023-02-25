@@ -5,6 +5,8 @@ import { OrganizationService } from 'src/organization/organization.service';
 import { PrismaService } from 'src/prisma/prsima.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
+import { doc } from 'prettier';
+import { DocumentReceiveDetail } from './entities/document.entity';
 
 @Injectable()
 export class DocumentService {
@@ -73,13 +75,20 @@ export class DocumentService {
       temp.where = {
         ...filter.where,
       };
+      const user = await this.prisma.user.findUnique({
+        where:{
+          username
+        }, include: {
+          User_Group:true
+        }
+      })
 
       const documents = await this.prisma.document.findMany({
         ...temp,
         where: {
           user: {
             username: own ? username : undefined,
-          },
+          }
         },
         include: {
           user: {
@@ -90,6 +99,12 @@ export class DocumentService {
               fullName: true,
             },
           },
+          DocumentReceiveDetail :{
+            select: {
+              id: true,
+              userId: true
+            }
+          }
         },
       });
       return documents;
@@ -110,11 +125,31 @@ export class DocumentService {
         },
         include: {
           user: true,
+          DocumentReceiveDetail : true,
+          DocumentReceiveGroup : true,
         },
       });
-      if (document.user.username !== username) {
-        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+      const user = await this.prisma.user.findUnique({
+         where: {
+           username 
+          },
+          include:{
+            User_Group : true
+          }
+         });
+          console.log(document);
+          
+      if (document.user.username === username) {
+        return document;
       }
+      else if(document.DocumentReceiveDetail.find(doc => doc.userId === user.id)) {
+        return document;
+      }
+      else if(document.DocumentReceiveGroup.find(doc => user.User_Group.find(g => g.groupId === doc.groupId)))
+     {
+      return document;
+      }else throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+      
     } catch (error) {
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -126,9 +161,18 @@ export class DocumentService {
     updateDocumentDto: UpdateDocumentDto,
   ) {
     try {
-      const document = this.findOne(username, id);
+      const document = await this.prisma.document.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          user: true,
+        },
+      });
       if (!document) {
         throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+      }else if (document.user.username!== username) {
+        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
       }
       const updatedDocument = await this.prisma.document.update({
         where: {
@@ -144,11 +188,20 @@ export class DocumentService {
     }
   }
 
-  remove(username: string, id: string) {
+  async remove(username: string, id: string) {
     try {
-      const document = this.findOne(username, id);
+      const document = await this.prisma.document.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          user: true,
+        },
+      });
       if (!document) {
         throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+      }else if(document.user.username!== username) {
+        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
       }
       const deletedDocument = this.prisma.document.delete({
         where: {
@@ -169,28 +222,43 @@ export class DocumentService {
   ) {
     try {
       const documents = await this.prisma.document.findMany({
-        ...filter,
         where: {
-          user: {
-            username: own ? username : undefined,
-          },
           OR: [
             {
-              description: {
-                contains: queryString,
-              },
+              user: {
+                username: username
+              }
             },
             {
-              content: {
-                contains: queryString,
-              },
+              DocumentReceiveDetail: {
+                some: {
+                  user: {
+                    username: username
+                  }
+                }
+              }
             },
-            {},
-          ],
+            {
+              DocumentReceiveGroup: {
+                some: {
+                  group: {
+                    User_Group: {
+                      some: {
+                        user: {
+                          username : username
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
         },
         orderBy: {
           dateRelease: 'desc',
         },
+        
       });
 
       return documents;
