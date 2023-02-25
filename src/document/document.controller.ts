@@ -15,18 +15,15 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
-import { Document, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
-import {
-  DirectFilterPipe,
-  FilterBuilder,
-  FilterDto,
-  FilterOperationType,
-} from 'src/shared';
+import { DirectFilterPipe, FilterDto } from 'src/shared';
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
+import { Document } from './entities/document.entity';
 
 @Controller('document')
 @UseGuards(JwtGuard)
@@ -43,6 +40,26 @@ export class DocumentController {
   }
 
   @Get()
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Search by content or description',
+  })
+  @ApiQuery({
+    name: 'own',
+    required: false,
+    description: 'Get own document',
+  })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    description: 'Filter by field',
+  })
+  @ApiAcceptedResponse({
+    description: 'Get all document',
+    isArray: true,
+    type: Document,
+  })
   findAll(
     @Request() req,
     @Query() own: boolean,
@@ -65,6 +82,7 @@ export class DocumentController {
           'id',
           'type',
           'issueMark',
+          'issueGroupId',
           'issuePublisherId',
           'dateRelease',
           'dataAvailable',
@@ -73,34 +91,24 @@ export class DocumentController {
           'content',
           'createdAt',
           'updatedAt',
+          'sentDepartment',
         ],
       ),
     )
     filter: FilterDto<Prisma.DocumentWhereInput>,
     @Query('q') q: string,
   ) {
-    if (q) {
-      return this.documentService.findMany(
-        q,
-        filter.findOptions,
-        own,
-        req.user.username,
-      );
-    }
-    return this.documentService.findAll(
-      req.user.username,
+    return this.documentService.findMany(
       filter.findOptions,
+      q,
       own,
+      req.user.username,
     );
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req) {
-    const builder = new FilterBuilder()
-      .addFilter('type', FilterOperationType.Eq, 'Cong_Van')
-      .toQueryString();
-    console.log(builder);
-    return this.documentService.findOne(req.user.id, id);
+    return this.documentService.findOne(req.user.username, id);
   }
 
   @Patch(':id')

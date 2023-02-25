@@ -15,11 +15,7 @@ export class DocumentService {
   ) {}
   async create(createDocumentDto: CreateDocumentDto, userId: string) {
     try {
-      const {
-        dateExpired,
-        dateRelease,
-        dataAvailable,
-      } = createDocumentDto;
+      const { dateExpired, dateRelease, dataAvailable } = createDocumentDto;
 
       //Check date valid
       if (dateExpired < dateRelease) {
@@ -94,8 +90,6 @@ export class DocumentService {
       });
       return documents;
     } catch (e) {
-      console.log(e);
-
       throw new HttpException('message', HttpStatus.INTERNAL_SERVER_ERROR, {
         cause: new Error(e),
       });
@@ -110,13 +104,50 @@ export class DocumentService {
         },
         include: {
           user: true,
+          DocumentReceiveDetail: {
+            //Get user inside the document receive detail list
+            distinct: ['userId'],
+            select: {
+              user: {
+                select: {
+                  username: true,
+                  avatar: true,
+                  fullName: true,
+                  email: true,
+                },
+              },
+            },
+          },
         },
       });
-      if (document.user.username !== username) {
-        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+
+      //If user is not inside the document receive detail list => return null
+      if (
+        document.DocumentReceiveDetail &&
+        document.DocumentReceiveDetail.length > 0
+      ) {
+        const isExist = document.DocumentReceiveDetail.some(
+          (item) => item.user.username === username,
+        );
+
+        if (!isExist) {
+          throw new HttpException('message', HttpStatus.NOT_FOUND, {
+            cause: new Error('Not found'),
+          });
+        }
+        return document;
       }
+      throw new HttpException('message', HttpStatus.NOT_FOUND, {
+        cause: new Error('Not found'),
+      });
     } catch (error) {
-      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error as string,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -162,41 +193,47 @@ export class DocumentService {
   }
 
   async findMany(
-    queryString: string,
     filter: Prisma.DocumentFindManyArgs,
+    queryString: string,
     own: boolean,
     username: string,
   ) {
     try {
+      filter.where = {
+        ...filter.where,
+        user: {
+          username: own ? username : undefined,
+        },
+        OR: [
+          {
+            description: {
+              contains: queryString,
+            },
+          },
+          {
+            content: {
+              contains: queryString,
+            },
+          },
+          {
+            DocumentReceiveDetail: {
+              some: {
+                user: {
+                  username: username,
+                },
+              },
+            },
+          },
+        ],
+      };
       const documents = await this.prisma.document.findMany({
         ...filter,
-        where: {
-          user: {
-            username: own ? username : undefined,
-          },
-          OR: [
-            {
-              description: {
-                contains: queryString,
-              },
-            },
-            {
-              content: {
-                contains: queryString,
-              },
-            },
-            {},
-          ],
-        },
-        orderBy: {
-          dateRelease: 'desc',
-        },
+        // include: {},
       });
 
       return documents;
     } catch (error) {
       console.log(error);
-
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
