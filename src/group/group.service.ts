@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prsima.service';
+import { GroupSeed } from 'src/seed/entity/seed.entity';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 
@@ -19,6 +20,19 @@ export class GroupService {
     }
   }
 
+  async createMany(groups: GroupSeed[]) {
+    const _groups = await this.prisma.group.createMany({
+      skipDuplicates: true,
+      data: groups.map((group) => {
+        return {
+          name: group.name,
+        };
+      }),
+    });
+
+    return _groups;
+  }
+
   async findAll() {
     try {
       const groups = await this.prisma.group.findMany();
@@ -26,9 +40,48 @@ export class GroupService {
       return groups;
     } catch (error) {}
   }
+  async findOne(id: string) {
+    try {
+      const group = await this.prisma.group.findUnique({
+        where: {
+          id,
+        },
+      });
 
-  findOne(id: number) {
-    return `This action returns a #${id} group`;
+      return group;
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async findEach(ids: string[]) {
+    try {
+      const groups = await this.prisma.group.findMany({
+        where: {
+          id: {
+            in: ids,
+          },
+        },
+      });
+
+      return groups;
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async findByName(name: string) {
+    try {
+      const group = await this.prisma.group.findUnique({
+        where: {
+          name,
+        },
+      });
+
+      return group;
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   update(id: number, updateGroupDto: UpdateGroupDto) {

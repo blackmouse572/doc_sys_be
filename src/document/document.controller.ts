@@ -15,6 +15,7 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
+  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { Document, Prisma } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
@@ -43,6 +44,7 @@ export class DocumentController {
   }
 
   @Get()
+  @ApiCookieAuth()
   findAll(
     @Request() req,
     @Query() own: boolean,
@@ -53,7 +55,6 @@ export class DocumentController {
           'type',
           'issueMark',
           'issuePublisherId',
-          'dateRelease',
           'dataAvailable',
           'dateExpired',
           'description',
@@ -77,7 +78,7 @@ export class DocumentController {
       ),
     )
     filter: FilterDto<Prisma.DocumentWhereInput>,
-    @Query('q') q: string,
+    @Query('q') q?: string,
   ) {
     if (q) {
       return this.documentService.findMany(

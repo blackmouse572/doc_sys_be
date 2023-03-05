@@ -1,6 +1,6 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from 'src/prisma/prsima.service';
 import PrismaHelper from 'src/shared/prisma.helper';
@@ -15,6 +15,59 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
   ) {}
+
+  async createMany(users: CreateUserDto[]);
+  async createMany(users: Prisma.UserCreateManyInput[]);
+  /**
+   * Create many users. This is used for seeding data or importing data from excel file.
+   * This method is not exposed to the API
+   *
+   *`ALERT`: This will not check if the user already exists
+   * @param users
+   * @returns
+   * @memberof UserService
+   *
+   */
+  async createMany(users: any) {
+    const _users = await Promise.all(
+      users.map(async (user) => {
+        user.dob = new Date(user.dob);
+        const { role, department, groups, ...restUser } = user;
+        const hashedPassword = await argon2.hash(user.password);
+
+        try {
+          const createdUser = await this.prisma.user.create({
+            data: {
+              ...restUser,
+              password: hashedPassword,
+            },
+          });
+
+          PrismaHelper.exclude(createdUser, [
+            'password',
+            'emailConfirmed',
+            'emailConfirmCode',
+            'resetPasswordCode',
+            'phoneNumberConfirmCode',
+          ]);
+
+          return {
+            ...createdUser,
+          };
+        } catch (error) {
+          throw new HttpException(
+            `User ${user.username} already exists`,
+            HttpStatus.BAD_REQUEST,
+            {
+              cause: error.meta,
+            },
+          );
+        }
+      }),
+    );
+    return _users;
+  }
+
   async create(createUserDto: CreateUserDto) {
     const { email, username, phoneNumber } = createUserDto;
     //Check if user already exists
@@ -142,8 +195,24 @@ export class UserService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    return user;
+  }
+
+  async findByUsername(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+
+    return user;
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
