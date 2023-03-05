@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsDate, IsOptional, IsString } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -12,4 +12,30 @@ export class CreateUserDto {
   phoneNumber: string;
   @IsString()
   fullName: string;
+
+  @IsDate()
+  @IsOptional()
+  dob: Date;
+
+  @IsString()
+  @IsOptional()
+  CID: string;
+  @IsString()
+  @IsOptional()
+  description: string;
+  @IsString()
+  @IsOptional()
+  currentAddress: string;
+
+  @IsString()
+  @IsOptional()
+  groups: string;
+
+  @IsString()
+  @IsOptional()
+  department: string;
+
+  @IsString()
+  @IsOptional()
+  role: string;
 }

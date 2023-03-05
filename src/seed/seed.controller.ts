@@ -1,32 +1,108 @@
-import { Controller, Get } from '@nestjs/common';
-import * as xlsx from 'xlsx';
+import { Controller, HttpException, Post } from '@nestjs/common';
+import { Req, UseGuards } from '@nestjs/common/decorators';
+import { JwtGuard } from 'src/auth/guards/jwt.guard';
+import { SeedService } from './seed.service';
 
 @Controller()
+@UseGuards(JwtGuard)
 export class SeedController {
-  @Get('/seed')
-  async createSeedData() {
-    const workbook = xlsx.readFile('./src/seed/ACCOUNT_TABLE_DOCSYS.xlsx');
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = xlsx.utils.sheet_to_json(worksheet);
+  constructor(private readonly seedService: SeedService) {}
+  @Post('/seed-role')
+  async createRoleSeedData() {
+    const fileURL = './src/seed/ACCOUNT_TABLE_DOCSYS.xlsx';
+    try {
+      const result = await this.seedService.generateRoleData(fileURL);
+      return result;
+    } catch (error) {
+      console.log(error);
+      switch (error.code) {
+        //Case read excel file error
+        case 'ENOENT':
+          throw new HttpException('File not found', 404);
+        //Case sheet not found
+        case 'TypeError':
+          throw new HttpException('Sheet not found', 404);
+        case 'P2002':
+        case HttpException:
+          throw new HttpException('Duplicate data', 400);
+        default:
+          throw new HttpException(error, 500);
+      }
+    }
+  }
 
-    // console.log(data);
+  @Post('/seed-department')
+  async createDepartmentSeedData() {
+    const fileURL = './src/seed/ACCOUNT_TABLE_DOCSYS.xlsx';
+    try {
+      const result = await this.seedService.generateDepartmentData(fileURL);
+      return result;
+    } catch (error) {
+      console.log(error);
+      switch (error.code) {
+        //Case read excel file error
+        case 'ENOENT':
+          throw new HttpException('File not found', 404);
+        //Case sheet not found
+        case 'TypeError':
+          throw new HttpException('Sheet not found', 404);
+        case 'P2002':
+        case HttpException:
+          throw new HttpException('Duplicate data', 400);
+        default:
+          throw new HttpException(error, 500);
+      }
+    }
+  }
 
-    const records = [];
+  @Post('/seed-group')
+  async createGroupSeedData() {
+    const fileURL = './src/seed/ACCOUNT_TABLE_DOCSYS.xlsx';
+    try {
+      const result = await this.seedService.genrateGroupData(fileURL);
+      return result;
+    } catch (error) {
+      console.log(error);
+      switch (error.code) {
+        //Case read excel file error
+        case 'ENOENT':
+          throw new HttpException('File not found', 404);
+        //Case sheet not found
+        case 'TypeError':
+          throw new HttpException('Sheet not found', 404);
+        case 'P2002':
+        case HttpException:
+          throw new HttpException('Duplicate data', 400);
+        default:
+          throw new HttpException(error, 500);
+      }
+    }
+  }
 
-    data.forEach((row) => {
-      if (Object.keys(row).length > 3) records.push(row);
-    });
-
-    // Create a new workbook
-    const workbook2 = xlsx.utils.book_new();
-
-    // Create a new worksheet and add data
-    const worksheet2 = xlsx.utils.json_to_sheet(records);
-    xlsx.utils.book_append_sheet(workbook2, worksheet2, 'Data');
-
-    // Save workbook2 to file
-    xlsx.writeFile(workbook2, './src/seed/data.xlsx');
-
-    return 'Seed data created';
+  @Post('/seed-user')
+  async createSeedData(@Req() req: any) {
+    const fileURL = './src/seed/ACCOUNT_TABLE_DOCSYS.xlsx';
+    try {
+      const result = await this.seedService.generateMembersData(
+        fileURL,
+        req.user.username,
+      );
+      return result;
+    } catch (error) {
+      console.log(error);
+      switch (error.code) {
+        //Case read excel file error
+        case 'ENOENT':
+          throw new HttpException('File not found', 404);
+        //Case sheet not found
+        case 'TypeError':
+          throw new HttpException('Sheet not found', 404);
+        case 'P2002':
+        case HttpException:
+          throw new HttpException('Duplicate data', 400);
+        default:
+          throw new HttpException(error, 500);
+      }
+    }
   }
 }

@@ -118,8 +118,6 @@ export class DocumentService {
               fullName: true,
             },
           },
-          Department: true,
-          Organization: true,
         },
       });
       return documents;

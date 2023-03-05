@@ -25,23 +25,23 @@ export class AuthController {
   @Post('login')
   @ApiBody({ type: LoginUserDto })
   async login(@Request() req, @Response({ passthrough: true }) res) {
-      const user = await this.userService.getUserFullInfo(req.user.user.username);
+    const user = await this.userService.getUserFullInfo(req.user.user.username);
 
-      const { username, UserWorkPlaceDetails } = user;
-      const { department, role, organization } = UserWorkPlaceDetails[0] || {};
-      const token = this.userService.getJWToken({
-        department,
-        role,
-        organization,
-        username,
-      });
-      const secretData = {
-        token,
-        refreshToken: '',
-      };
+    const { username, UserWorkPlaceDetails } = user;
+    const { department, role, organization } = UserWorkPlaceDetails[0] || {};
+    const token = this.userService.getJWToken({
+      department,
+      role,
+      organization,
+      username,
+    });
+    const secretData = {
+      token,
+      refreshToken: '',
+    };
 
-      res.cookie('auth-cookie', secretData, { httpOnly: true });
-      return { user };
+    res.cookie('auth-cookie', secretData, { httpOnly: true });
+    return { user };
   }
 
   @Post('register')
