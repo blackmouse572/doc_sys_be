@@ -11,6 +11,7 @@ import { PrismaService } from './prisma/prsima.service';
 import { UserModule } from './user/user.module';
 import { GroupModule } from './group/group.module';
 import { RoleModule } from './role/role.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RoleModule } from './role/role.module';
     OrganizationModule,
     GroupModule,
     RoleModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -35,7 +35,7 @@ model User {
 
 model Department {
   id                   String                 @id @default(uuid())
-  name                 String
+  name                 String                 @unique
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   UserWorkPlaceDetails UserWorkPlaceDetails[]
@@ -59,24 +59,27 @@ model UserWorkPlaceDetails {
   organization   Organization @relation(fields: [organizationId], references: [id])
   role           Role         @relation(fields: [roleId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, roleId, departmentId, organizationId])
 }
 
 model Role {
   id                   String                 @id @default(uuid())
-  name                 String
+  name                 String                 @unique
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   UserWorkPlaceDetails UserWorkPlaceDetails[]
 }
 
 model Group {
-  id         String       @id @default(uuid())
-  name       String
-  level      Int          @default(1)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  User_Group User_Group[]
+  id                   String                 @id @default(uuid())
+  name                 String                 @unique
+  level                Int                    @default(1)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
   DocumentReceiveGroup DocumentReceiveGroup[]
+  User_Group           User_Group[]
+  Document             Document[]
 }
 
 model User_Group {
@@ -87,6 +90,8 @@ model User_Group {
   updatedAt DateTime @updatedAt
   group     Group    @relation(fields: [groupId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, groupId])
 }
 
 model Document {
@@ -103,7 +108,9 @@ model Document {
   dateRelease           DateTime
   user                  User                    @relation(fields: [issuePublisherId], references: [id])
   DocumentReceiveDetail DocumentReceiveDetail[]
-  DocumentReceiveGroup DocumentReceiveGroup[]
+  Group                 Group?                  @relation(fields: [groupId], references: [id])
+  groupId               String?
+  DocumentReceiveGroup  DocumentReceiveGroup[]
 }
 
 model DocumentReceiveDetail {
@@ -118,22 +125,22 @@ model DocumentReceiveDetail {
   document     Document @relation(fields: [documentId], references: [id])
   user         User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId,documentId])
+  @@unique([userId, documentId])
 }
 
 model DocumentReceiveGroup {
-  id           String   @id @default(uuid())
+  id           String   @id
   documentId   String
-  groupId       String
+  groupId      String
   date_receive DateTime
   isRead       Boolean  @default(false)
   isDeleted    Boolean  @default(false)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  document     Document @relation(fields: [documentId], references: [id])
-  group         Group     @relation(fields: [groupId], references: [id])
+  updatedAt    DateTime
+  Document     Document @relation(fields: [documentId], references: [id])
+  Group        Group    @relation(fields: [groupId], references: [id])
 
-  @@unique([groupId,documentId])
+  @@unique([groupId, documentId])
 }
 
 enum RoleType {
