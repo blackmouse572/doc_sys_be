@@ -3,14 +3,16 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { ChatModule } from './chat/chat.module';
 import { DepartmentModule } from './department/department.module';
 import { DocumentModule } from './document/document.module';
+import { GroupModule } from './group/group.module';
 import { OrganizationModule } from './organization/organization.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prsima.service';
-import { UserModule } from './user/user.module';
-import { GroupModule } from './group/group.module';
 import { RoleModule } from './role/role.module';
+import { UserModule } from './user/user.module';
+import { RoomModule } from './room/room.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { RoleModule } from './role/role.module';
     OrganizationModule,
     GroupModule,
     RoleModule,
+    ChatModule,
+    RoomModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -126,18 +126,24 @@ export class DocumentService {
         document.DocumentReceiveDetail &&
         document.DocumentReceiveDetail.length > 0
       ) {
-        const isExist = document.DocumentReceiveDetail.some(
-          (item) => item.user.username === username,
+        //Check if user is inside the document receive detail list
+        const isExist =
+          document.DocumentReceiveDetail.some(
+            (item) => item.user.username === username,
+          ) || document.user.username === username;
+        console.log(
+          'Document receive detail: ',
+          document.DocumentReceiveDetail,
         );
 
         if (!isExist) {
-          throw new HttpException('message', HttpStatus.NOT_FOUND, {
+          throw new HttpException('Not found', HttpStatus.NOT_FOUND, {
             cause: new Error('Not found'),
           });
         }
         return document;
       }
-      throw new HttpException('message', HttpStatus.NOT_FOUND, {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND, {
         cause: new Error('Not found'),
       });
     } catch (error) {
@@ -199,36 +205,49 @@ export class DocumentService {
     username: string,
   ) {
     try {
+      //Modify filter to make sure that get all document that user can see (own document or document that user is in the receive list)
+
       filter.where = {
         ...filter.where,
-        user: {
-          username: own ? username : undefined,
-        },
         OR: [
           {
-            description: {
-              contains: queryString,
-            },
-          },
-          {
-            content: {
-              contains: queryString,
+            user: {
+              username: own ? username : undefined,
             },
           },
           {
             DocumentReceiveDetail: {
               some: {
                 user: {
-                  username: username,
+                  username: own ? username : undefined,
                 },
               },
             },
           },
         ],
+        AND: [
+          {
+            OR: [
+              {
+                content: {
+                  contains: queryString,
+                },
+              },
+              {
+                description: {
+                  contains: queryString,
+                },
+              },
+            ],
+          },
+        ],
       };
+
       const documents = await this.prisma.document.findMany({
         ...filter,
-        // include: {},
+        include: {
+          user: true,
+        },
       });
 
       return documents;
