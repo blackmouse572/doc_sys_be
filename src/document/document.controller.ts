@@ -108,6 +108,8 @@ export class DocumentController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req) {
+    console.log(req.user);
+
     return this.documentService.findOne(req.user.username, id);
   }
 

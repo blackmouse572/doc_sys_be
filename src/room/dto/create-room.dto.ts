@@ -1,14 +1,14 @@
-import { IsArray, IsString } from 'class-validator';
+import { IsArray, IsOptional, IsString } from 'class-validator';
 
 export class CreateRoomDto {
   @IsString()
   name: string;
 
   @IsString()
+  @IsOptional()
   avatar?: string;
 
-  @IsArray({
-    each: true,
-  })
+  //Array of emails (string)
+  @IsArray()
   membersEmail: string[];
 }

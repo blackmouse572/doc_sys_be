@@ -13,6 +13,7 @@ import { PrismaService } from './prisma/prsima.service';
 import { RoleModule } from './role/role.module';
 import { UserModule } from './user/user.module';
 import { RoomModule } from './room/room.module';
+import { ChattingModule } from './chatting/chatting.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { RoomModule } from './room/room.module';
     RoleModule,
     ChatModule,
     RoomModule,
+    ChattingModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

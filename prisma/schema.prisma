@@ -27,14 +27,15 @@ model User {
   phoneNumberConfirmCode String?
   phoneNumberConfirmed   Boolean                 @default(false)
   resetPasswordCode      String?
+  rooms                  Room[]                  @relation("RoomMembers")
   Document               Document[]
   DocumentReceiveDetail  DocumentReceiveDetail[]
+  Message                Message[]
   UserWorkPlaceDetails   UserWorkPlaceDetails[]
   User_Group             User_Group[]
-  roomId                 String?
   AdminMembers           Room[]                  @relation("AdminMembers")
-  Message                Message[]
-  Room                   Room?                   @relation(fields: [roomId], references: [id])
+  roomId                 String?
+  Room                   Room[]
 }
 
 model Department {
@@ -140,6 +141,30 @@ model DocumentReceiveGroup {
   @@unique([groupId, documentId])
 }
 
+model Room {
+  id           String    @id @default(uuid())
+  name         String
+  avatar       String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messages     Message[]
+  members      User[]    @relation("RoomMembers")
+  adminMembers User[]    @relation("AdminMembers")
+  User         User?     @relation(fields: [userId], references: [id])
+  userId       String?
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  senderId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  roomId    String?
+  Room      Room?    @relation(fields: [roomId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
+}
+
 enum RoleType {
   Bi_Thu
   Chu_Tich
@@ -179,29 +204,4 @@ enum IssueMarkType {
   Ban_Quan_Tri
   Ban_Ke_Toan
   Phong_Tong_Hop
-}
-
-model Room {
-  id           String @id @default(uuid())
-  name         String
-  avatar       String
-  adminMembers User[] @relation("AdminMembers")
-
-  members  User[]
-  messages Message[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Message {
-  id       String @id @default(uuid())
-  content  String
-  senderId String
-  sender   User   @relation(fields: [senderId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  Room      Room?    @relation(fields: [roomId], references: [id])
-  roomId    String?
 }
