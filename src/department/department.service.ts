@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common/enums';
 import { HttpException } from '@nestjs/common/exceptions';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prsima.service';
 import { DepartmentSeed } from 'src/seed/entity/seed.entity';
 import { CreateDepartmentDto } from './dto/create-department.dto';
@@ -35,8 +36,8 @@ export class DepartmentService {
     return _departments;
   }
 
-  findAll() {
-    return `This action returns all department`;
+  async findAll(filter?: Prisma.DepartmentFindManyArgs) {
+    return await this.prisma.department.findMany(filter);
   }
 
   async findOne(id: string) {

@@ -74,6 +74,25 @@ export class SeedService {
     }
   }
 
+  async createOrganization({ name }: { name: string }) {
+    try {
+      const rs = await this.prisma.organization.create({
+        data: {
+          name,
+        },
+      });
+
+      return rs;
+    } catch (error) {
+      throw new HttpException(
+        {
+          message: `Organization name: ${name} already exists`,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async createGroup({
     groupName,
     username,
@@ -167,39 +186,111 @@ export class SeedService {
     const workbook = readFile(fileURL);
     const memberSheets = workbook.Sheets['members'];
     const userData = xlsxUtils.sheet_to_json<UserSeed>(memberSheets);
-
-    const roleSet = new Set<string>();
-    const departmentSet = new Set<string>();
+    //Check if all the roles, departments, groups, organizations are existed
+    const rolesSet = new Set<string>();
+    const departmentsSet = new Set<string>();
     const groupSet = new Set<string>();
 
     userData.forEach((user) => {
-      roleSet.add(user.role);
-      departmentSet.add(user.department);
-      user.groups.split(',').forEach((group) => {
-        groupSet.add(group);
-      });
+      rolesSet.add(user.role);
+      departmentsSet.add(user.department);
+      user.groups.split(',').forEach((group) => groupSet.add(group.trim()));
     });
 
-    const roleArr = Array.from(roleSet);
-    const departmentArr = Array.from(departmentSet);
-    const groupArr = Array.from(groupSet);
+    const roles = await this.roleServices.findAll({
+      where: {
+        name: {
+          in: Array.from(rolesSet),
+        },
+      },
+    });
+    const departments = await this.departmentServices.findAll({
+      where: {
+        name: {
+          in: Array.from(departmentsSet),
+        },
+      },
+    });
 
-    //Get all groups, roles, departments
-    const roles = await this.roleServices.findEach(roleArr);
-    const departments = await this.departmentServices.findEach(departmentArr);
-    const groups = await this.groupServices.findEach(groupArr);
+    const groups = await this.groupServices.findAll({
+      where: {
+        name: {
+          in: Array.from(groupSet),
+        },
+      },
+    });
+
+    const isRoleExisted = roles.length === rolesSet.size;
+    const isDepartmentExisted =
+      departments.length === departmentsSet.size && departments.length > 0;
+    const isGroupExisted = groups.length === groupSet.size && groups.length > 0;
+    console.log(`Roles: (${isRoleExisted}-${roles.length}-${rolesSet.size})`);
+    //Console log the missing roles
+    const missingRole = roles
+      .map((role) => role.name)
+      .filter((role) => {
+        return !Array.from(rolesSet).includes(role);
+      });
+    console.log(`Missing roles: ${missingRole}`);
+    console.log(
+      Array.from(rolesSet).sort((a, b) =>
+        a.localeCompare(b, 'en', { sensitivity: 'base' }),
+      ),
+    );
+    console.log(
+      roles
+        .map((role) => role.name)
+        .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })),
+    );
+
+    if (!isRoleExisted || !isDepartmentExisted || !isGroupExisted) {
+      //Get the missing roles, departments, groups
+      const missingRoles = userData //Get all the roles in the excel file
+        .map((user) => user.role)
+        .filter((role) => !roles.map((role) => role.name).includes(role)); //Filter out the roles that are not existed in the database
+      const missingDepartments = userData
+        .map((user) => user.department)
+        .filter(
+          (department) =>
+            !departments
+              .map((department) => department.name)
+              .includes(department),
+        )
+        //Remove the duplicate department
+        .filter(
+          (department, index, self) =>
+            index === self.findIndex((d) => d === department),
+        );
+
+      const missingGroups = Array.from(groupSet)
+        .filter((group) => !groups.map((group) => group.name).includes(group))
+        .filter(
+          (group, index, self) => index === self.findIndex((g) => g === group),
+        );
+
+      throw new HttpException(
+        {
+          message: {
+            roles: isRoleExisted ? null : missingRoles,
+            departments: isDepartmentExisted ? null : missingDepartments,
+            groups: isGroupExisted ? null : missingGroups,
+          },
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
 
     //Nested array of user
     const users: Prisma.UserCreateManyInput[] = userData.map((user) => {
       const groups = user.groups.split(',');
-      return {
+      const puser: Prisma.UserCreateInput = {
         username: user.username,
         email: user.email,
         password: user.password,
         fullName: user.fullName,
         dob: user.dob,
         phoneNumber: user.phoneNumber,
-        userWorkPlaceDetails: {
+        UserWorkPlaceDetails: {
           create: {
             role: {
               connect: {
@@ -218,21 +309,32 @@ export class SeedService {
             },
           },
         },
-        user_Groups: {
+        User_Group: {
           create: groups.map((group) => {
             return {
               group: {
                 connect: {
-                  name: group,
+                  name: group.trim(),
                 },
               },
             };
           }),
         },
       };
-    });
 
-    await this.userServices.createMany(users);
+      return puser;
+    });
+    try {
+      await this.userServices.createMany(users);
+    } catch (err) {
+      console.log(err);
+      throw new HttpException(
+        {
+          message: `Role name: ${err.roleName}, department name: ${err.departmentName}, organization id: ${err.organizationId} or username: ${err.username} does not exist`,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
 
     return {
       status: 'success',

@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prsima.service';
 import { GroupSeed } from 'src/seed/entity/seed.entity';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -33,9 +34,9 @@ export class GroupService {
     return _groups;
   }
 
-  async findAll() {
+  async findAll(filter?: Prisma.GroupFindManyArgs) {
     try {
-      const groups = await this.prisma.group.findMany();
+      const groups = await this.prisma.group.findMany(filter);
 
       return groups;
     } catch (error) {}

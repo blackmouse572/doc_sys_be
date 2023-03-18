@@ -7,6 +7,12 @@ import { SeedService } from './seed.service';
 @UseGuards(JwtGuard)
 export class SeedController {
   constructor(private readonly seedService: SeedService) {}
+
+  @Post('/seed-organization')
+  async createOrganizationSeedData() {
+    return this.seedService.createOrganization({ name: 'Organization 1' });
+  }
+
   @Post('/seed-role')
   async createRoleSeedData() {
     const fileURL = './src/seed/ACCOUNT_TABLE_DOCSYS.xlsx';

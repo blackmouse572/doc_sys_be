@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from 'src/prisma/prsima.service';
 import PrismaHelper from 'src/shared/prisma.helper';
@@ -16,8 +16,6 @@ export class UserService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async createMany(users: CreateUserDto[]);
-  async createMany(users: Prisma.UserCreateManyInput[]);
   /**
    * Create many users. This is used for seeding data or importing data from excel file.
    * This method is not exposed to the API
@@ -55,6 +53,8 @@ export class UserService {
             ...createdUser,
           };
         } catch (error) {
+          console.error(error);
+
           throw new HttpException(
             `User ${user.username} already exists`,
             HttpStatus.BAD_REQUEST,

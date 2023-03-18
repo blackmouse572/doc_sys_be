@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prsima.service';
 import { RoleSeed } from 'src/seed/entity/seed.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -20,8 +21,8 @@ export class RoleService {
     }
   }
 
-  findAll() {
-    return `This action returns all role`;
+  async findAll(filter?: Prisma.RoleFindManyArgs) {
+    return await this.prisma.role.findMany(filter);
   }
 
   async findOne(id: string) {

@@ -27,10 +27,14 @@ model User {
   phoneNumberConfirmCode String?
   phoneNumberConfirmed   Boolean                 @default(false)
   resetPasswordCode      String?
+  roomId                 String?
   Document               Document[]
   DocumentReceiveDetail  DocumentReceiveDetail[]
+  Message                Message[]
+  Room_User_roomIdToRoom Room?                   @relation("User_roomIdToRoom", fields: [roomId], references: [id])
   UserWorkPlaceDetails   UserWorkPlaceDetails[]
   User_Group             User_Group[]
+  Room_AdminMembers      Room[]                  @relation("AdminMembers")
 }
 
 model Department {
@@ -43,7 +47,7 @@ model Department {
 
 model Organization {
   id                   String                 @id @default(uuid())
-  name                 String
+  name                 String                 @unique
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   UserWorkPlaceDetails UserWorkPlaceDetails[]
@@ -59,8 +63,6 @@ model UserWorkPlaceDetails {
   organization   Organization @relation(fields: [organizationId], references: [id])
   role           Role         @relation(fields: [roleId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
-
-  @@unique([userId, roleId, departmentId, organizationId])
 }
 
 model Role {
@@ -89,8 +91,6 @@ model User_Group {
   updatedAt DateTime @updatedAt
   group     Group    @relation(fields: [groupId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
-
-  @@unique([userId, groupId])
 }
 
 model Document {
@@ -138,6 +138,28 @@ model DocumentReceiveGroup {
   Group        Group    @relation(fields: [groupId], references: [id])
 
   @@unique([groupId, documentId])
+}
+
+model Message {
+  id        String   @id
+  content   String
+  senderId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  roomId    String?
+  Room      Room?    @relation(fields: [roomId], references: [id])
+  User      User     @relation(fields: [senderId], references: [id])
+}
+
+model Room {
+  id                     String    @id
+  name                   String
+  avatar                 String
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime
+  Message                Message[]
+  User_User_roomIdToRoom User[]    @relation("User_roomIdToRoom")
+  User_AdminMembers      User[]    @relation("AdminMembers")
 }
 
 enum RoleType {
