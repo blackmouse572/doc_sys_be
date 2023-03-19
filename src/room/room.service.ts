@@ -318,6 +318,7 @@ export class RoomService {
 
     return {
       message: 'Leave room successfully',
+      updatedRoom,
     };
   }
 
@@ -337,6 +338,8 @@ export class RoomService {
             username: true,
           },
         },
+        name: true,
+        createdAt: true,
       },
     });
 
@@ -353,12 +356,33 @@ export class RoomService {
 
     //Get room messages
     findOptions.take = findOptions.take || 10;
-    findOptions.orderBy = findOptions.orderBy || [{ createdAt: 'desc' }];
-    const messages = await this.prisma.message.findMany({
-      where: {
-        roomId: id,
+    findOptions.where = {
+      ...findOptions.where,
+      Room: {
+        id: id,
       },
+    };
+
+    const messages = await this.prisma.message.findMany({
       ...findOptions,
+      select: {
+        sender: {
+          select: {
+            username: true,
+            avatar: true,
+            fullName: true,
+            email: true,
+          },
+        },
+        content: true,
+        createdAt: true,
+        updatedAt: true,
+        id: true,
+      },
+      orderBy: {
+        ...findOptions.orderBy,
+        createdAt: 'desc',
+      },
     });
 
     return {
@@ -367,6 +391,7 @@ export class RoomService {
         total: messages.length,
         limit: findOptions.take,
         offset: findOptions.skip || 0,
+        room: room,
       },
     };
   }
