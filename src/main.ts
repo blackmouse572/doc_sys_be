@@ -15,7 +15,7 @@ async function bootstrap() {
     origin: 'http://localhost:5173',
     credentials: true,
     preflightContinue: false,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: [
       'Origin',
       'X-Requested-With',

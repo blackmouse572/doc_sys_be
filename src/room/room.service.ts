@@ -102,10 +102,12 @@ export class RoomService {
               username: true,
               avatar: true,
               email: true,
+              fullName: true,
             },
           },
           adminMembers: {
             select: {
+              fullName: true,
               username: true,
               avatar: true,
               email: true,
