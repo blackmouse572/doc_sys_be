@@ -99,6 +99,9 @@ export class RoomService {
           id: id,
         },
         select: {
+          id: true,
+          name: true,
+          avatar: true,
           members: {
             select: {
               username: true,
@@ -233,7 +236,28 @@ export class RoomService {
         },
         data: {
           members: {
-            connect: userEmails.map((user) => ({ username: user })),
+            connect: userEmails.map((user) => ({ email: user })),
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          avatar: true,
+          adminMembers: {
+            select: {
+              username: true,
+              email: true,
+              fullName: true,
+              avatar: true,
+            },
+          },
+          members: {
+            select: {
+              username: true,
+              email: true,
+              fullName: true,
+              avatar: true,
+            },
           },
         },
       });
@@ -269,12 +293,28 @@ export class RoomService {
             username: true,
           },
         },
+        members: {
+          select: {
+            email: true,
+            username: true,
+          },
+        },
       },
     });
 
     if (!room.adminMembers.some((user) => user.username === username)) {
       throw new HttpException(
         'You are not admin of this room',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!room.members.some((user) => addUser.userEmails.includes(user.email))) {
+      const user = addUser.userEmails.find(
+        (user) => !room.members.some((member) => member.email === user),
+      );
+      throw new HttpException(
+        `User ${user} is not in this room`,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -287,6 +327,27 @@ export class RoomService {
       data: {
         members: {
           disconnect: addUser.userEmails.map((user) => ({ email: user })),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        avatar: true,
+        adminMembers: {
+          select: {
+            username: true,
+            email: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+        members: {
+          select: {
+            username: true,
+            email: true,
+            fullName: true,
+            avatar: true,
+          },
         },
       },
     });

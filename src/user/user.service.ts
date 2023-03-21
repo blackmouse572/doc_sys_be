@@ -1,6 +1,6 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from 'src/prisma/prsima.service';
 import PrismaHelper from 'src/shared/prisma.helper';
@@ -71,6 +71,30 @@ export class UserService {
     ]);
 
     return users;
+  }
+
+  async findMany(username: string, filter: Prisma.UserFindManyArgs) {
+    filter.take = filter.take || 10;
+    const users = await this.prisma.user.findMany({
+      ...filter,
+    });
+
+    PrismaHelper.exclude<User, keyof User>(users, [
+      'password',
+      'emailConfirmed',
+      'emailConfirmCode',
+      'resetPasswordCode',
+      'phoneNumberConfirmCode',
+    ]);
+
+    return {
+      users,
+      metadata: {
+        total: users.length,
+        offset: filter.skip,
+        limit: filter.take,
+      },
+    };
   }
 
   async login(payload: LoginUserDto): Promise<any> {
