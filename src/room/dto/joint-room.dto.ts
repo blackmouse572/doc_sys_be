@@ -1,11 +1,7 @@
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { IsString } from 'class-validator';
+import { BaseUserRoomDto } from './base-user-room.dto';
 
-export class AddUserToRoom {
+export class AddUserToRoom extends BaseUserRoomDto {
   @IsString()
-  @IsNotEmpty()
   roomId: string;
-
-  @IsArray()
-  @IsNotEmpty()
-  users: string[];
 }

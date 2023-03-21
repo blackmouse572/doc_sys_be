@@ -1,14 +1,16 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prsima.service';
 import { GeneratedFindOptions } from 'src/shared';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { AddUserToRoom } from './dto/joint-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { UserAssignDto } from './dto/user-assigned.dto';
 
 @Injectable()
 export class RoomService {
   constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(RoomService.name);
   async create(createRoomDto: CreateRoomDto, email: string) {
     try {
       if (createRoomDto.membersEmail.length < 2) {
@@ -196,9 +198,13 @@ export class RoomService {
     return `This action removes a #${id} room`;
   }
 
-  async addUserToRoom(addUserToRoom: AddUserToRoom, username: string) {
+  async addUserToRoom(
+    addUserToRoom: AddUserToRoom,
+    username: string,
+    roomId: string,
+  ) {
     try {
-      const { roomId, users } = addUserToRoom;
+      const { userEmails } = addUserToRoom;
       //Check if current user is admin of the room
       const room = await this.prisma.room.findUnique({
         where: {
@@ -227,7 +233,7 @@ export class RoomService {
         },
         data: {
           members: {
-            connect: users.map((user) => ({ username: user })),
+            connect: userEmails.map((user) => ({ username: user })),
           },
         },
       });
@@ -247,11 +253,15 @@ export class RoomService {
     }
   }
 
-  async removeUserFromRoom(addUser: AddUserToRoom, username: string) {
+  async removeUserFromRoom(
+    addUser: AddUserToRoom,
+    username: string,
+    roomId: string,
+  ) {
     //Check if current user is admin of the room
     const room = await this.prisma.room.findUnique({
       where: {
-        id: addUser.roomId,
+        id: roomId,
       },
       select: {
         adminMembers: {
@@ -272,11 +282,11 @@ export class RoomService {
     //Remove users from room
     const updatedRoom = await this.prisma.room.update({
       where: {
-        id: addUser.roomId,
+        id: roomId,
       },
       data: {
         members: {
-          disconnect: addUser.users.map((user) => ({ username: user })),
+          disconnect: addUser.userEmails.map((user) => ({ email: user })),
         },
       },
     });
@@ -396,5 +406,203 @@ export class RoomService {
         room: room,
       },
     };
+  }
+
+  async removeAdmin(users: UserAssignDto, username: string, roomId: string) {
+    //Check if current user is admin of the room
+    const room = await this.prisma.room.findUnique({
+      where: {
+        id: roomId,
+      },
+      select: {
+        adminMembers: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
+
+    if (!room) {
+      throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
+    }
+    //Check if users assign is in room and  admin
+    const usersInRoom = await this.prisma.user.findMany({
+      where: {
+        email: {
+          in: users.userEmails,
+        },
+        rooms: {
+          some: {
+            id: roomId,
+          },
+        },
+      },
+      select: {
+        email: true,
+        username: true,
+      },
+    });
+
+    if (usersInRoom.length !== users.userEmails.length) {
+      const usersNotInRoom = users.userEmails.filter(
+        (user) => !usersInRoom.some((userInRoom) => userInRoom.email === user),
+      );
+      throw new HttpException(
+        `Users ${usersNotInRoom} not in room`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!room.adminMembers.some((user) => user.username === username)) {
+      this.logger.debug(
+        `${username} failed to assign admin (${users.userEmails}) to room ${roomId} because he is not admin of this room`,
+      );
+
+      throw new HttpException(
+        'You are not admin of this room',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    this.logger.log(
+      `Remove admin to room ${roomId} by ${username}: ${users.userEmails}`,
+    );
+
+    //Assign new admin
+    const updatedRoom = await this.prisma.room.update({
+      where: {
+        id: roomId,
+      },
+      data: {
+        adminMembers: {
+          disconnect: users.userEmails.map((userEmail) => ({
+            email: userEmail,
+          })),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        avatar: true,
+        adminMembers: {
+          select: {
+            username: true,
+            email: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+        members: {
+          select: {
+            username: true,
+            email: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    return updatedRoom;
+  }
+
+  async assignAdmin(users: UserAssignDto, username: string, roomId) {
+    //Check if current user is admin of the room
+    const room = await this.prisma.room.findUnique({
+      where: {
+        id: roomId,
+      },
+      select: {
+        adminMembers: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
+
+    if (!room) {
+      throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
+    }
+    //Check if users assign is in room and not admin
+    const usersInRoom = await this.prisma.user.findMany({
+      where: {
+        email: {
+          in: users.userEmails,
+        },
+        rooms: {
+          some: {
+            id: roomId,
+          },
+        },
+      },
+      select: {
+        email: true,
+        username: true,
+      },
+    });
+
+    if (usersInRoom.length !== users.userEmails.length) {
+      const usersNotInRoom = users.userEmails.filter(
+        (user) => !usersInRoom.some((userInRoom) => userInRoom.email === user),
+      );
+      throw new HttpException(
+        `Users ${usersNotInRoom} not in room`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!room.adminMembers.some((user) => user.username === username)) {
+      console.log(room.adminMembers);
+
+      this.logger.debug(
+        `${username} failed to assign admin (${users.userEmails}) to room ${roomId} because he is not admin of this room`,
+      );
+
+      throw new HttpException(
+        'You are not admin of this room',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    this.logger.log(
+      `Assign admin to room ${roomId} by ${username}: ${users.userEmails}`,
+    );
+
+    //Assign new admin
+    const updatedRoom = await this.prisma.room.update({
+      where: {
+        id: roomId,
+      },
+      data: {
+        adminMembers: {
+          connect: users.userEmails.map((userEmail) => ({ email: userEmail })),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        avatar: true,
+        adminMembers: {
+          select: {
+            username: true,
+            email: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+        members: {
+          select: {
+            username: true,
+            email: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    return updatedRoom;
   }
 }

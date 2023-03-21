@@ -15,6 +15,7 @@ import { DirectFilterPipe, FilterDto } from 'src/shared';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { AddUserToRoom } from './dto/joint-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { UserAssignDto } from './dto/user-assigned.dto';
 import { RoomService } from './room.service';
 
 @Controller('room')
@@ -67,7 +68,29 @@ export class RoomController {
   ) {
     const { username } = req.user;
 
-    return this.roomService.addUserToRoom(addUser, username);
+    return this.roomService.addUserToRoom(addUser, username, id);
+  }
+
+  @Post(':id/assign')
+  assignAdmin(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() usersAssigned: UserAssignDto,
+  ) {
+    const { username } = req.user;
+
+    return this.roomService.assignAdmin(usersAssigned, username, id);
+  }
+
+  @Post(':id/assign-remove')
+  removeAdmin(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() usersAssigned: UserAssignDto,
+  ) {
+    const { username } = req.user;
+
+    return this.roomService.removeAdmin(usersAssigned, username, id);
   }
 
   @Post(':id/kick')
@@ -78,7 +101,7 @@ export class RoomController {
   ) {
     const { username } = req.user;
 
-    return this.roomService.removeUserFromRoom(addUser, username);
+    return this.roomService.removeUserFromRoom(addUser, username, id);
   }
 
   @Post(':id/leave')

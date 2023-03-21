@@ -33,7 +33,7 @@ export class ChattingGateway
     this.logger.log(`Client disconnected: ${client.id}`);
   }
   handleConnection(client: Socket & JwtUser, ...args: any[]): void {
-    this.logger.debug(
+    this.logger.log(
       `Client connected: ${client.id} with username: ${client.username}
       `,
     );
@@ -77,12 +77,13 @@ export class ChattingGateway
     const room = await this.roomService.addUserToRoom(
       addData,
       currentUser.username,
+      addData.roomId,
     );
 
     //Send message to room
-    this.server.to(addData.roomId).emit('memberAdded', {
+    this.server.to(room.id).emit('memberAdded', {
       username: currentUser.username,
-      users: addData.users,
+      users: addData.userEmails,
     });
   }
 
