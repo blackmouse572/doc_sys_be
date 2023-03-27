@@ -42,6 +42,26 @@ export class ChattingService {
     return msg;
   }
 
+  async createServerMessage(roomId: string, content: string) {
+    const msg = await this.prisma.message.create({
+      data: {
+        content: content,
+        Room: {
+          connect: {
+            id: roomId,
+          },
+        },
+        sender: {
+          connect: {
+            username: 'system',
+          },
+        },
+      },
+    });
+
+    return msg;
+  }
+
   findAll() {
     return `This action returns all chatting`;
   }

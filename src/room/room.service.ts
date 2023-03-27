@@ -352,7 +352,23 @@ export class RoomService {
       },
     });
 
-    return updatedRoom;
+    const kickedUser = await this.prisma.user.findMany({
+      where: {
+        email: {
+          in: addUser.userEmails,
+        },
+      },
+      select: {
+        username: true,
+        fullName: true,
+        email: true,
+      },
+    });
+
+    return {
+      updatedRoom,
+      kickedUser,
+    };
   }
 
   async leaveRoom(roomId: string, username: string) {
@@ -367,6 +383,18 @@ export class RoomService {
             username: true,
           },
         },
+      },
+    });
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        username: username,
+      },
+      select: {
+        username: true,
+        fullName: true,
+        email: true,
+        avatar: true,
       },
     });
 
@@ -392,6 +420,7 @@ export class RoomService {
     return {
       message: 'Leave room successfully',
       updatedRoom,
+      user,
     };
   }
 

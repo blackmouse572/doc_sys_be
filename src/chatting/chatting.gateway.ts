@@ -9,12 +9,14 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { User } from '@prisma/client';
 import { Server, Socket } from 'socket.io';
 import { AddUserToRoom } from 'src/room/dto/joint-room.dto';
 import { RoomService } from 'src/room/room.service';
 import JwtUser from 'src/user/entities/jwt-user.entity';
 import { ChattingService } from './chatting.service';
 import { SendMessageDto } from './dto/send-message.dto';
+import { ClientToServerEvents, ServerToClientEvents } from './dto/socket';
 
 @WebSocketGateway()
 export class ChattingGateway
@@ -32,15 +34,17 @@ export class ChattingGateway
   handleDisconnect(client: any) {
     this.logger.log(`Client disconnected: ${client.id}`);
   }
-  handleConnection(client: Socket & JwtUser, ...args: any[]): void {
+  handleConnection(client: Socket & JwtUser): void {
     this.logger.log(
       `Client connected: ${client.id} with username: ${client.username}
       `,
     );
   }
+
   private readonly logger: Logger;
   @WebSocketServer()
-  server: Server;
+  server: Server<ClientToServerEvents, ServerToClientEvents>;
+
   extractUser(client: Socket & JwtUser) {
     return {
       username: client.username,
@@ -48,6 +52,7 @@ export class ChattingGateway
       role: client.role,
       department: client.department,
       organization: client.organization,
+      fullName: client.fullName,
     };
   }
 
@@ -68,7 +73,36 @@ export class ChattingGateway
     });
   }
 
-  @SubscribeMessage('addMember')
+  @SubscribeMessage('kick')
+  async kick(
+    @MessageBody()
+    kickData: {
+      roomId: string;
+      users: Pick<User, 'fullName' | 'username' | 'avatar' | 'email'>[];
+    },
+    @ConnectedSocket() client: Socket & JwtUser,
+  ) {
+    const currentUser = this.extractUser(client);
+    console.log(kickData);
+
+    //Api was called, this is just for notification
+    const kickedUserFullname =
+      kickData.users.length > 1
+        ? kickData.users.map((user) => user.fullName).join(' ,')
+        : kickData.users[0].fullName;
+
+    await this.chattingService.createServerMessage(
+      kickData.roomId,
+      `${kickedUserFullname} đã bị xoá bởi ${currentUser.username}`,
+    );
+    this.logger.debug(`${currentUser.username} kicked ${kickedUserFullname}`);
+    this.server.to(kickData.roomId).emit('memberKicked', {
+      users: kickData.users,
+      admin: currentUser,
+    });
+  }
+
+  @SubscribeMessage('addMembers')
   async addMembers(
     @MessageBody() addData: AddUserToRoom,
     @ConnectedSocket() client: Socket & JwtUser,
@@ -80,10 +114,21 @@ export class ChattingGateway
       addData.roomId,
     );
 
+    //Get user info to send to room
+    const userAdded = addData.userEmails.map((email) => {
+      return room.members.find((member) => member.email === email);
+    });
+    this.logger.debug(
+      `${currentUser.username}${userAdded.length} members to room ${room.id}`,
+    );
+    const addUserFullname = userAdded.map((user) => user.fullName).join(' ,');
+    await this.chattingService.createServerMessage(
+      addData.roomId,
+      `${addUserFullname} được thêm vào bởi ${currentUser.username}`,
+    );
     //Send message to room
     this.server.to(room.id).emit('memberAdded', {
-      username: currentUser.username,
-      users: addData.userEmails,
+      users: [...userAdded],
     });
   }
 
@@ -92,7 +137,17 @@ export class ChattingGateway
     @MessageBody() roomId: string,
     @ConnectedSocket() client: Socket & JwtUser,
   ) {
-    this.logger.debug(`User(${client.username} joined room: ${roomId})`);
+    this.logger.debug(`User(${client.fullName} joined room: ${roomId})`);
+    //Check if user is in room
+    const room = await this.roomService.findOne(roomId, client.username);
+
+    if (!room) {
+      this.logger.error(
+        `User(${client.username}) try to join room(${roomId}) but not a member`,
+      );
+      return;
+    }
+
     client.join(roomId);
   }
 
@@ -101,6 +156,11 @@ export class ChattingGateway
     @MessageBody() roomId: string,
     @ConnectedSocket() client: Socket,
   ) {
+    const leaveData = await this.roomService.leaveRoom(roomId, client.id);
+    await this.chattingService.createServerMessage(
+      roomId,
+      `${leaveData.user.fullName} đã rời khỏi phòng`,
+    );
     client.leave(roomId);
   }
 

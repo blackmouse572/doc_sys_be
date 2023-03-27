@@ -30,13 +30,14 @@ export class AuthController {
   async login(@Request() req, @Res({ passthrough: true }) res: Response) {
     const user = await this.userService.getUserFullInfo(req.user.user.username);
 
-    const { username, UserWorkPlaceDetails, email } = user;
+    const { username, UserWorkPlaceDetails, email, fullName } = user;
     const { department, role, organization } = UserWorkPlaceDetails[0] || {};
     const token = this.userService.getJWToken({
       department,
       role,
       organization,
       username,
+      fullName,
       email,
     });
     const secretData = {
@@ -62,12 +63,13 @@ export class AuthController {
     //return user token and refresh token
 
     const user = await this.userService.getUserFullInfo(r.user.username);
-    const { username, UserWorkPlaceDetails, email } = user;
+    const { username, UserWorkPlaceDetails, email, fullName } = user;
     const { department, role, organization } = UserWorkPlaceDetails[0] || {};
     const token = this.userService.getJWToken({
       department,
       role,
       organization,
+      fullName,
       username,
       email,
     });
