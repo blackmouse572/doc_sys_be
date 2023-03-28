@@ -67,6 +67,32 @@ export class RoomService {
 
       const rooms = await this.prisma.room.findMany({
         ...filter,
+        include: {
+          messages: {
+            include: {
+              sender: {
+                select: {
+                  username: true,
+                  avatar: true,
+                  email: true,
+                  fullName: true,
+                },
+              },
+            },
+            where: {
+              sender: {
+                username: {
+                  not: 'system',
+                },
+              },
+            },
+            take: 1,
+            orderBy: {
+              createdAt: 'desc',
+            },
+            distinct: ['roomId'],
+          },
+        },
       });
 
       return {

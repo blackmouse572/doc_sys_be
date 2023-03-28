@@ -11,7 +11,7 @@ interface ServerToClientEvents {
   connect: () => void;
   disconnect: () => void;
   message: ({ message }: { message: Message }) => void;
-  memberAdded: ({ users }: MemberAddProps) => void;
+  memberAdded: ({ users, admin }: MemberAddProps) => void;
   memberKicked: ({ users, admin }: MemberKickProps) => void;
 }
 

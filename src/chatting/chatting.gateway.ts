@@ -96,6 +96,7 @@ export class ChattingGateway
       `${kickedUserFullname} đã bị xoá bởi ${currentUser.username}`,
     );
     this.logger.debug(`${currentUser.username} kicked ${kickedUserFullname}`);
+    //Send message to room
     this.server.to(kickData.roomId).emit('memberKicked', {
       users: kickData.users,
       admin: currentUser,
@@ -129,6 +130,7 @@ export class ChattingGateway
     //Send message to room
     this.server.to(room.id).emit('memberAdded', {
       users: [...userAdded],
+      admin: currentUser,
     });
   }
 
