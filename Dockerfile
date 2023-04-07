@@ -7,8 +7,8 @@ WORKDIR /usr/src/app
 # Copy package.json 
 COPY package*.json ./
 
-# Install dependencies (excluding devDependencies)
-RUN npm ci --omit=dev  
+# Install dependencies (excluding devDependencies) if package-lock.json is present
+RUN npm ci --only=production
 
 # Copy source code
 COPY . .

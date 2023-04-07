@@ -38,4 +38,4 @@ jobs:
             docker rm docsys_be
             docker rmi docsys_be:latest
             docker load -i /home/ubuntu/docsys_be:latest
-            docker run -d --name docsys_be -p 5000:5000 docsys_be:latest
+            docker run -d --name docsys_be -p 3000:3000 docsys_be:latest
